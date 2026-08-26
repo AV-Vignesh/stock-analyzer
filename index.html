@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="vault">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1014">
+<title>Ledger — Stock Research</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1 class="brand">Ledger</h1>
+  <span id="providerBadge" class="provider-badge" title="Active AI provider">—</span>
+</header>
+
+<main id="main">
+
+  <!-- ============ STOCKS ============ -->
+  <section id="view-stocks" class="view active">
+    <div class="searchwrap">
+      <input id="stockSearch" type="search" inputmode="search" placeholder="Search NSE stocks — name or symbol" autocomplete="off">
+    </div>
+    <div id="sectorChips" class="chips"></div>
+    <ul id="stockList" class="stock-list"></ul>
+    <div id="searchMiss" class="search-miss hidden">
+      <p>Not in the bundled list.</p>
+      <button id="analyzeTyped" class="btn btn-accent">Analyze "<span id="typedName"></span>" anyway</button>
+      <p class="hint">The AI resolves any NSE/BSE name or symbol via web search.</p>
+    </div>
+  </section>
+
+  <!-- ============ WATCHLIST ============ -->
+  <section id="view-watch" class="view">
+    <div class="section-head"><h2>Watchlist</h2></div>
+    <ul id="watchList" class="stock-list"></ul>
+    <p id="watchEmpty" class="empty hidden">No stocks watched yet. Open any stock and tap “Watch”.</p>
+  </section>
+
+  <!-- ============ PORTFOLIO ============ -->
+  <section id="view-portfolio" class="view">
+    <div class="section-head">
+      <h2>Portfolio</h2>
+      <button id="addHoldingBtn" class="btn btn-small">+ Add holding</button>
+    </div>
+
+    <div id="pfSummary" class="pf-summary hidden">
+      <div class="pf-row">
+        <div><span class="pf-label">Invested</span><span id="pfInvested" class="pf-num">—</span></div>
+        <div><span class="pf-label">Current</span><span id="pfCurrent" class="pf-num">—</span></div>
+        <div><span class="pf-label">P&amp;L</span><span id="pfPnl" class="pf-num">—</span></div>
+      </div>
+      <div class="pf-actions">
+        <button id="refreshPricesBtn" class="btn btn-small">Refresh prices (AI)</button>
+        <button id="healthCheckBtn" class="btn btn-small btn-accent">Portfolio health check</button>
+      </div>
+      <p id="pricesAsOf" class="hint"></p>
+    </div>
+
+    <ul id="holdingsList" class="holdings-list"></ul>
+    <p id="pfEmpty" class="empty">No holdings yet. Add what you bought on INDMoney — this app is your research layer; it cannot sync with INDMoney (no public API).</p>
+
+    <div id="healthReport" class="card hidden"></div>
+  </section>
+
+  <!-- ============ COMPARE ============ -->
+  <section id="view-compare" class="view">
+    <div class="section-head"><h2>Compare</h2></div>
+    <p class="hint">Pick 2–3 stocks, then run. Uses live web research.</p>
+    <div class="searchwrap">
+      <input id="compareSearch" type="search" placeholder="Add stock to compare" autocomplete="off">
+      <ul id="compareSuggest" class="suggest hidden"></ul>
+    </div>
+    <div id="compareChips" class="chips"></div>
+    <button id="runCompareBtn" class="btn btn-accent btn-block" disabled>Run comparison</button>
+    <div id="compareResult"></div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="view-settings" class="view">
+    <div class="section-head"><h2>Settings</h2></div>
+
+    <div class="card">
+      <h3>AI providers</h3>
+      <label class="field">Default provider
+        <select id="setProvider">
+          <option value="anthropic">Anthropic (live web research)</option>
+          <option value="azure">Azure OpenAI (no live data)</option>
+        </select>
+      </label>
+
+      <h4>Anthropic</h4>
+      <label class="field">API key
+        <input id="setAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+      </label>
+      <label class="field">Model
+        <input id="setAnthropicModel" type="text" placeholder="claude-sonnet-4-6">
+      </label>
+      <button id="testAnthropic" class="btn btn-small">Test connection</button>
+      <span id="testAnthropicResult" class="test-result"></span>
+
+      <h4>Azure OpenAI</h4>
+      <label class="field">Endpoint
+        <input id="setAzureEndpoint" type="url" placeholder="https://YOUR-RESOURCE.openai.azure.com" autocomplete="off">
+      </label>
+      <label class="field">Deployment name
+        <input id="setAzureDeployment" type="text" placeholder="gpt-4o-mini" autocomplete="off">
+      </label>
+      <label class="field">API version
+        <input id="setAzureApiVersion" type="text" placeholder="2024-08-01-preview">
+      </label>
+      <label class="field">API key
+        <input id="setAzureKey" type="password" autocomplete="off">
+      </label>
+      <button id="testAzure" class="btn btn-small">Test connection</button>
+      <span id="testAzureResult" class="test-result"></span>
+      <p class="hint">Azure OpenAI has no web search — analyses run on model knowledge only and are labeled as such. Anthropic is the live-data engine.</p>
+    </div>
+
+    <div class="card">
+      <h3>Appearance</h3>
+      <label class="field">Theme
+        <select id="setTheme">
+          <option value="vault">Vault (dark)</option>
+          <option value="paper">Paper (light)</option>
+          <option value="terminal">Terminal (green/black)</option>
+          <option value="indigo">Indigo (dark blue)</option>
+        </select>
+      </label>
+      <label class="field">Accent</label>
+      <div id="accentSwatches" class="swatches"></div>
+      <label class="field">Font size
+        <select id="setFontScale">
+          <option value="0.92">Small</option>
+          <option value="1" selected>Medium</option>
+          <option value="1.1">Large</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="card">
+      <h3>Data</h3>
+      <p class="hint">Everything lives in this phone's browser storage (IndexedDB). Nothing is uploaded anywhere except your prompts to the AI provider you configured.</p>
+      <button id="exportBtn" class="btn btn-small">Export backup (JSON)</button>
+      <label class="btn btn-small file-btn">Import backup<input id="importFile" type="file" accept="application/json" hidden></label>
+      <button id="wipeBtn" class="btn btn-small btn-danger">Wipe all data</button>
+    </div>
+
+    <p class="hint disclaimer">Research aid only, not investment advice. AI outputs can be wrong or stale — verify numbers on screener.in / NSE before acting. Execution happens in INDMoney; this app never touches your money.</p>
+  </section>
+</main>
+
+<!-- ============ BOTTOM NAV ============ -->
+<nav class="tabbar">
+  <button class="tab active" data-view="stocks">Stocks</button>
+  <button class="tab" data-view="watch">Watch</button>
+  <button class="tab" data-view="portfolio">Portfolio</button>
+  <button class="tab" data-view="compare">Compare</button>
+  <button class="tab" data-view="settings">Settings</button>
+</nav>
+
+<!-- ============ STOCK DETAIL SHEET ============ -->
+<div id="sheet" class="sheet hidden">
+  <div class="sheet-head">
+    <button id="sheetBack" class="btn-icon" aria-label="Back">&larr;</button>
+    <div class="sheet-title">
+      <strong id="sheetSymbol"></strong>
+      <span id="sheetName"></span>
+    </div>
+    <button id="watchToggle" class="btn btn-small">Watch</button>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<!-- ============ ADD HOLDING DIALOG ============ -->
+<dialog id="holdingDialog">
+  <form method="dialog" id="holdingForm">
+    <h3>Add holding</h3>
+    <label class="field">Symbol
+      <input name="symbol" required placeholder="e.g. TCS" style="text-transform:uppercase">
+    </label>
+    <label class="field">Quantity
+      <input name="qty" type="number" min="1" step="1" required inputmode="numeric">
+    </label>
+    <label class="field">Avg. buy price (₹)
+      <input name="avgPrice" type="number" min="0.05" step="0.05" required inputmode="decimal">
+    </label>
+    <label class="field">Buy date
+      <input name="date" type="date">
+    </label>
+    <div class="dialog-actions">
+      <button value="cancel" class="btn btn-small">Cancel</button>
+      <button value="ok" class="btn btn-small btn-accent">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/db.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
